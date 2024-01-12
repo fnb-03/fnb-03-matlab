@@ -1,134 +1,120 @@
-classdef idstick
-    properties (SetAccess = immutable)
-        SerialNumber (1,1) uint32
-    end
-    properties (Access = private)
-        Status (1,1) string
-    end
-    properties (SetAccess = private)
-        Participant (1,1) string
-        Course (1,1) course
-        Timestamps (:,1) datetime
-    end
-
-    methods
-        function id = idstick(snum)
-            if (nargin > 0)
-                % Check attributes of given serial number(s)
-                mustBeNumeric(snum)
-                mustBeInteger(snum)
-                mustBePositive(snum)
-                % Make array of objects
-                for k = 1:numel(snum)
-                    id(k).SerialNumber = snum(k);
-                end
-            end
-        end
-
-        function disp(id)
-            for k = 1:numel(id)
-                % Start building display string
-                str = "ID stick #" + id(k).SerialNumber;
-                % Add participant info, if applicable
-                if (id(k).Participant == "")
-                    str = str + " which is not yet registered";
-                    disp(str)
-                else
-                    str = str + " is registered to " + id(k).Participant + " who is ";
-                    % Use status to get the correct wording
-                    switch id(k).Status
-                        case "Ready"
-                            str = str + "ready to run";
-                        case "Running"
-                            str = str + "running";
-                        case "Done"
-                            str = str + "finished with";
-                    end
-                    % Display the string, then display the course details
-                    disp(str)
-                    disp(id(k).Course)
-                end
-            end
-        end
-
-        function id = register(id,name,c)
-            arguments
-                id (1,1) idstick
-                name (1,1) string
-                c (1,1) course
-            end
-            id.Participant = name;
-            id.Course = c;
-            id.Timestamps = NaT(size(c.Waypoints));
-            id.Status = "Ready";
-            signal(id,true)
-        end
-
-        function id = checkWaypoint(id,wayptnum)
-            arguments
-                id (1,1) idstick
-                wayptnum (1,1) double
-            end
-            % Get the course object
-            c = id.Course;
-            % Check and update ID stick status
-            % Check that this waypoint is on this course
-            [id,ok,n] = updateStatus(id,wayptnum);
-            % If the waypoint is valid, the ID stick status is ok, and the
-            % waypoint is not the start, use the course method to check
-            % this waypoint according to the rules of the course. (If this
-            % waypoint is the start, there's nothing more to check.)
-            if ok && (n > 1)
-                ok = checkWaypoint(c,id,n);
-            end
-            % Update the time stamp of this waypoint
-            id.Timestamps(n) = datetime("now");
-            % Tell the participant what happened
-            signal(id,ok)
-        end
-
-    end
+classdef idstick %komutu, idstick adlı yeni bir sınıf tanımlar.
+    properties (SetAccess = immutable) %komutu, properties komutunun bir parçasıdır ve bir özelliğin set erişimini tanımlar. immutable değeri, özelliğin değerinin yalnızca nesnenin oluşturulması sırasında ayarlanabileceğini belirtir. Nesnenin oluşturulmasından sonra, özellik değeri değiştirilemez.
     
-    methods (Access = private)
-        function signal(id,ok)
-            if ok
-                if (id.Status == "Ready") || (id.Status == "Done")
-                    disp("Beep beep")
-                else
-                    disp("Beep")
-                end
-            else
-                disp("Buzz")
-            end
+        SerialNumber (1,1) uint32 %SerialNumber (1,1) uint32 ifadesi, 1x1 boyutunda bir uint32 veri türündeki bir diziyi temsil eder. Bu dizi, bir tamsayı dizisidir ve her bir öğe 32 bittir.uint32 veri türü, 0 ile 4294967295 arasında tamsayılar için kullanılır. Bu dizi, bir nesnenin kimliğini veya bir cihazın seri numarasını temsil etmek için kullanılabilir.
+    end % bitti demektir
+    properties (Access = private) % properties (Access = private) ifadesi, bir sınıfın özelliklerinin erişim düzeyini özel (private) olarak ayarlar
+        Status (1,1) string % Status (1,1) string ifadesi, 1x1 boyutunda bir string veri türündeki bir diziyi temsil eder. Bu dizi, bir metin dizisidir ve yalnızca bir öğe içerir.
+    end % bitti
+    properties (SetAccess = private) %ifadesi, bir sınıf içindeki bir özelliğin nasıl değiştirilebileceğini kontrol etmenin bir yolunu belirtir.
+        Participant (1,1) string % ifadesi, bir katılımcının kimliğini veya benzersiz bir tanımlayıcısını temsil eden bir dizgidir. Bu ifade, genellikle bir veri yapısında veya veritabanında bulunan bir katılımcıyı belirtmek için kullanılır.bir Participant nesnesinin bir dizgi özelliği olabilir. Bu durumda, katılımcının benzersiz bir tanımlayıcısını veya adını tutabilir.
+        Course (1,1) course % bu dizideki  birincil anahtar değerini (1,1) temsil eder.
+        Timestamps (:,1) datetime % bir zaman damgası dizisinin ilk sütununu tarih ve saat verisine dönüştürür.
+    end % bitti
+
+    methods %bir sınıfta tanımlanan tüm yöntemlerin bir listesini döndürür. Bu liste, yöntem adlarını, parametrelerini ve dönüş değerlerini içerir.
+        function id = idstick(snum) % bir "snum" değişkenindeki bir dizinin benzersiz bir kimliğini döndürür. Bu kimlik, dizinin ilk elemanının konumunu ve boyutunu temsil eder.
+            if (nargin > 0) % bir işleve girilen argüman sayısının sıfırdan büyük olup olmadığını kontrol eder. Eğer argüman sayısı sıfırdan büyükse, ifadenin içindeki kod çalıştırılır. Argüman sayısı sıfır ise, ifadenin içindeki kod atlanır.
+                mustBeNumeric(snum) %  bir "snum" değişkeninin sayısal bir değer olup olmadığını kontrol eder. Eğer "snum" sayısal bir değer ise, ifadenin içindeki kod çalıştırılır. Sayısal bir değer değilse, ifadenin içindeki kod atlanır.
+                mustBeInteger(snum) % bir "snum" değişkeninin tam sayı bir değer olup olmadığını kontrol eder. Eğer "snum" tam sayı bir değer ise, ifadenin içindeki kod çalıştırılır. Tam sayı değilse, ifadenin içindeki kod atlanır.
+                mustBePositive(snum) % bir "snum" değişkeninin pozitif bir değer olup olmadığını kontrol eder. Eğer "snum" pozitif bir değer ise, ifadenin içindeki kod çalıştırılır. Pozitif değilse, ifadenin içindeki kod atlanır.
+                for k = 1:numel(snum) % bir "snum" değişkeninin öğelerini tek tek işleyen bir döngüdür. Döngü, "snum" değişkeninin ilk öğesinden başlayarak, her öğeyi bir kez işledikten sonra, son öğeye kadar çalışır.
+                    id(k).SerialNumber = snum(k); % "id(k).SerialNumber = snum(k);" ifadesi, "id" değişkenindeki bir dizinin "k". öğesinin "SerialNumber" özelliğini "snum" değişkeninin "k". öğesine ayarlar.
+                end % bitti
+
+            end % bitti
+
+        end % bitti
+
+        function disp(id) % "function disp(id)" ifadesi, bir "id" değişkenini görüntüler.
+            for k = 1:numel(id) %  ifadesi, bir "id" değişkeninin öğelerini tek tek işleyen bir döngüdür. Döngü, "id" değişkeninin ilk öğesinden başlayarak, her öğeyi bir kez işledikten sonra, son öğeye kadar çalışır.
+                str = "ID stick #" + id(k).SerialNumber; %  ifadesi, bir "id" değişkeninin "k". öğesinin "SerialNumber" özelliğini içeren bir metin dizisi oluşturur.
+                if (id(k).Participant == "") %"id" değişkeninin "k". öğesinin "Participant" özelliğinin boş olup olmadığını kontrol eder. Eğer boşsa, ifadenin içindeki kod çalıştırılır. Boş değilse, ifadenin içindeki kod atlanır.
+                    str = str + " which is not yet registered"; % bir metin dizisine ("str") ek bilgi eklemek için kullanılır.Yeni metin eklenir: İfadenin sağ tarafındaki " which is not yet registered" kısmı, eklenecek yeni metin bilgisidir. Bu metin, mevcut metin dizisinin sonuna eklenecektir.Metin dizileri birleştirilir: "+" operatörü, iki metin dizisini birleştirmek için kullanılır. Bu durumda, mevcut metin dizisi (str) ile yeni eklenecek metin (" which is not yet registered") birleştirilir.Sonuç yeni değişkene atanır: Birleştirme işleminin sonucu, tekrar str değişkenine atanır. Bu, mevcut metin dizisinin yeni eklenmiş metin ile güncellenmesini sağlar
+                    disp(str) %  str değişkeninin değerini komut penceresinde görüntülemek için kullanılır.
+                else % eğer
+                    str = str + " is registered to " + id(k).Participant + " who is "; % mevcut bir metin dizisine ("str") katılımcı bilgilerini ekleyerek genişletmek için kullanılır.Mevcut metin dizisi alınır: İfadenin sol tarafındaki str değişkeni, daha önce oluşturulmuş ve bir metin değeri içeren bir metin dizisini temsil eder. Bu değişken, yeni bilgiler eklenerek güncellenecektir.Katılımcı bilgisi alınır: id(k).Participant ifadesi, "id" adlı veri yapısının "k". öğesinin "Participant" özelliğini temsil eder. Bu özellik, muhtemelen katılımcının adını veya kimliğini içerir.Metin dizileri birleştirilir: "+" operatörü, üç farklı metin dizisini birleştirmek için kullanılır:
+                    switch id(k).Status %id(k).Status niteliğinin değerine göre bir dizi işlemden birini gerçekleştirmek için kullanılır.id(k).Status niteliğinin değeri alınır.Değer, switch bloğundaki etiketlerle karşılaştırılır.Eşleşen etiket bulunursa, etikete bağlı kod bloğunun işlemleri gerçekleştirilir.Eşleşen etiket bulunamazsa, default etiketine bağlı kod bloğu gerçekleştirilir.
+                        case "Ready" % "Ready" metin dizisine eşit olan bir değeri kontrol etmek için kullanılır."Ready" metin dizisi alınır.Değer, case bloğundaki etiketlerle karşılaştırılır.Eşleşen etiket bulunursa, etikete bağlı kod bloğunun işlemleri gerçekleştirilir.Eşleşen etiket bulunamazsa, default etiketine bağlı kod bloğu gerçekleştirilir.
+                            str = str + "ready to run"; % ifadesi, mevcut bir metin dizisine ("str") yeni bir metin parçası ("ready to run") eklemek için kullanılır.Mevcut metin dizisi alınır: İfadenin sol tarafındaki str değişkeni, daha önce oluşturulmuş ve bir metin değeri içeren bir metin dizisini temsil eder. Bu değişken, yeni bilgiler eklenerek güncellenecektir.Yeni metin parçası alınır: İfadenin sağ tarafındaki "ready to run" kısmı, eklenecek yeni metin parçasıdır. Bu metin, mevcut metin dizisinin sonuna eklenecektir.Metin dizileri birleştirilir: "+" operatörü, iki metin dizisini birleştirmek için kullanılır. Bu durumda, mevcut metin dizisi (str) ile yeni eklenecek metin ("ready to run") birleştirilir.Sonuç yeni değişkene atanır: Birleştirme işleminin sonucu, tekrar str değişkenine atanır. Bu, mevcut metin dizisinin yeni eklenmiş metin ile güncellenmesini sağlar.
+                        case "Running" % MATLAB'da, case "Running" ifadesi, "Running" metin dizisine eşit olan bir değeri kontrol etmek için kullanılır.İşleyiş sırası şu şekildedir: "Running" metin dizisi alınırDeğer, case bloğundaki etiketlerle karşılaştırılır.Eşleşen etiket bulunursa, etikete bağlı kod bloğunun işlemleri gerçekleştirilir.Eşleşen etiket bulunamazsa, default etiketine bağlı kod bloğu gerçekleştirilir.
+                            str = str + "running"; % ifadesi, mevcut bir metin dizisine ("str") yeni bir metin parçası ("running") eklemek için kullanılır.İşleyiş sırası şu şekildedir: Mevcut metin dizisi alınır: İfadenin sol tarafındaki str değişkeni, daha önce oluşturulmuş ve bir metin değeri içeren bir metin dizisini temsil eder. Bu değişken, yeni bilgiler eklenerek güncellenecektir.Yeni metin parçası alınır: İfadenin sağ tarafındaki "running" kısmı, eklenecek yeni metin parçasıdır. Bu metin, mevcut metin dizisinin sonuna eklenecektir.Metin dizileri birleştirilir: "+" operatörü, iki metin dizisini birleştirmek için kullanılır. Bu durumda, mevcut metin dizisi (str) ile yeni eklenecek metin ("running") birleştirilir.Sonuç yeni değişkene atanır: Birleştirme işleminin sonucu, tekrar str değişkenine atanır. Bu, mevcut metin dizisinin yeni eklenmiş metin ile güncellenmesini sağlar.
+                        case "Done" % MATLAB'da, case "Done" ifadesi, "Done" metin dizisine eşit olan bir değeri kontrol etmek için kullanılır.İşleyiş sırası şu şekildedir:"Done" metin dizisi alınır.Değer, case bloğundaki etiketlerle karşılaştırılır.Eşleşen etiket bulunursa, etikete bağlı kod bloğunun işlemleri gerçekleştirilir.Eşleşen etiket bulunamazsa, default etiketine bağlı kod bloğu gerçekleştirilir.
+                            str = str + "finished with"; % ifadesi, mevcut bir metin dizisine ("str") yeni bir metin parçası ("finished with") eklemek için kullanılır.İşleyiş sırası şu şekildedir:Mevcut metin dizisi alınır: İfadenin sol tarafındaki str değişkeni, daha önce oluşturulmuş ve bir metin değeri içeren bir metin dizisini temsil eder. Bu değişken, yeni bilgiler eklenerek güncellenecektirYeni metin parçası alınır: İfadenin sağ tarafındaki "finished with" kısmı, eklenecek yeni metin parçasıdır. Bu metin, mevcut metin dizisinin sonuna eklenecektir.Metin dizileri birleştirilir: "+" operatörü, iki metin dizisini birleştirmek için kullanılır. Bu durumda, mevcut metin dizisi (str) ile yeni eklenecek metin ("finished with") birleştirilir.Sonuç yeni değişkene atanır: Birleştirme işleminin sonucu, tekrar str değişkenine atanır. Bu, mevcut metin dizisinin yeni eklenmiş metin ile güncellenmesini sağlar.
+                    end % bitti
+                    disp(str) % str değişkeninin değerini komut penceresinde görüntülemek için kullanılır.İşleyiş sırası şu şekildedir:Değişken değeri alınır: İfadenin sol tarafındaki str değişkeni, görüntülenecek değeri temsil eder.Değer görüntülenir: disp() işlevi, değeri komut penceresinde görüntüler.
+                    disp(id(k).Course) %id dizisinin k. elemanının Course özelliğini görüntüler.id dizisi, bir dizi nesnenin kimliğini içerir.k değişkeni, bir tamsayıdır.Course özelliği, nesnenin kursunu içerir.
+                end % bitti
+            end  % bitti
+        end  % bitti
+
+        function id = register(id,name,c) % ifadesi, id değişkenine, name ve c değişkenlerinin değerlerini içeren bir kayıt atar.İşleyiş sırası şu şekildedir:Değişkenler alınır: İfadenin sol tarafındaki id değişkeni, atılacak kayıtın kimliğini temsil eder. İfadenin sağ tarafındaki name ve c değişkenleri, kayıtta saklanacak değerleri temsil eder.Kayıt oluşturulur: register() işlevi, name ve c değişkenlerinin değerlerini içeren bir kayıt oluşturur.Kayıt atanır: id değişkenine, oluşturulan kayıt atanır.
+            arguments % bir fonksiyona veya yönteme gönderilen değerleri temsil eder.Bir fonksiyon veya yöntemin argümanları, fonksiyonun veya yöntemin davranışını kontrol etmek için kullanılır. Örneğin, bir fonksiyon, argümanları kullanarak farklı hesaplamalar yapabilir veya farklı çıktılar üretebilir.
+                id (1,1) idstick % id matrisinin ilk satırının ilk sütunundaki değeri döndürür.İşleyiş sırası şu şekildedir:Matris alınır: İfadenin sol tarafındaki id matrisi, değeri döndürülecek matrisi temsil eder.Satır ve sütun değerleri alınır: İfadenin sağ tarafındaki 1 ve 1 değerleri, döndürülecek değerin satır ve sütun numaralarını temsil eder.Değer döndürülür: id matrisinin 1,1 konumundaki değer, ifadenin sonucu olarak döndürülür.
+                name (1,1) string % name matrisinin ilk satırının ilk sütunundaki değeri döndürür.İşleyiş sırası şu şekildedir:Matris alınır: İfadenin sol tarafındaki name matrisi, değeri döndürülecek matrisi temsil eder.Satır ve sütun değerleri alınır: İfadenin sağ tarafındaki 1 ve 1 değerleri, döndürülecek değerin satır ve sütun numaralarını temsil eder.Değer döndürülür: name matrisinin 1,1 konumundaki değer, ifadenin sonucu olarak döndürülür.
+                c (1,1) course % c matrisinin ilk satırının ilk sütunundaki değeri döndürür.İşleyiş sırası şu şekildedir:Matris alınır: İfadenin sol tarafındaki c matrisi, değeri döndürülecek matrisi temsil eder.Satır ve sütun değerleri alınır: İfadenin sağ tarafındaki 1 ve 1 değerleri, döndürülecek değerin satır ve sütun numaralarını temsil eder.Değer döndürülür: c matrisinin 1,1 konumundaki değer, ifadenin sonucu olarak döndürülür.
+            end  % bitti
+            id.Participant = name; % ifadesi, name değişkeninin değerini, id kayıtının Participant anahtarına atar.İşleyiş sırası şu şekildedir:Değişken ve anahtar alınır: İfadenin sol tarafındaki id değişkeni, değeri atanacak kayıtı temsil eder. İfadenin sağ tarafındaki name değişkeni, atanacak değerdir.Değer atanır: id kayıtının Participant anahtarına, name değişkeninin değeri atanır.
+            id.Course = c; % c değişkeninin değerini, id kayıtının Course anahtarına atar.İşleyiş sırası şu şekildedir:Değişken ve anahtar alınır: İfadenin sol tarafındaki id değişkeni, değeri atanacak kayıtı temsil eder. İfadenin sağ tarafındaki c değişkeni, atanacak değerdir.Değer atanır: id kayıtının Course anahtarına, c değişkeninin değeri atanır.
+            id.Timestamps = NaT(size(c.Waypoints)); % ifadesi, c değişkeninin Waypoints anahtarının boyutuna eşit sayıda NaT değerini id kayıtının Timestamps anahtarına atar.İşleyiş sırası şu şekildedir:Boyut alınır: İfadenin sağ tarafındaki size(c.Waypoints) ifadesi, c değişkeninin Waypoints anahtarının boyutunu döndürür.NaT değerleri oluşturulur: İfadenin sol tarafındaki NaT(size(c.Waypoints)) ifadesi, size(c.Waypoints) ifadesinin döndürdüğü boyuta eşit sayıda NaT değeri oluşturur.Değer atanır: id kayıtının Timestamps anahtarına, oluşturulan NaT değerleri atanır.
+            id.Status = "Ready"; % ifadesi, id kayıtının Status anahtarına, "Ready" değerini atar.İşleyiş sırası şu şekildedir:Değer alınır: İfadenin sağ tarafındaki "Ready" ifadesi, "Ready" metin dizisini döndürür.Değer atanır: id kayıtının Status anahtarına, "Ready" metin dizisi atanır.
+            signal(id,true) % ifadesi, id değişkeninin visible özelliğini true olarak ayarlar.İşleyiş sırası şu şekildedir:Değer alınır: İfadenin sağ tarafındaki true ifadesi, true değerini döndürür.Değer atanır: id değişkeninin visible özelliğine, true değeri atanır.
         end
 
-        function [id,ok,idx] = updateStatus(id,wayptnum)
-            % Find the given waypoint in the list for this course
-            wplist = id.Course.Waypoints;
-            idx = find(wayptnum == wplist,1,"first");
-            % What is the current ID Stick status?
-            if (id.Status == "Error") || (id.Status == "Done")
-                % Leave status alone, this check-in is a fail
-                ok = false;
-            elseif (id.Status == "Ready")
-                % Ready to start. Check that this waypoint is the start
-                if (idx == 1)
-                    % Alright, let's go!
-                    id.Status = "Running";
-                    ok = true;
-                else
-                    % Checking in at a later waypoint before starting
-                    ok = false;
-                end
-            else
-                % In progress. Check that this waypoint is on this course
-                ok = ~isempty(idx);
-                % If this waypoint is the end, we're done
-                if (idx == numel(wplist))
-                    id.Status = "Done";
-                end
+        function id = checkWaypoint(id,wayptnum) % ifadesi, id değişkeninin Waypoints anahtarının wayptnum. elemanının geçerli olup olmadığını kontrol eden bir fonksiyondur.İşleyiş sırası şu şekildedir:Girişler alınır: İfadenin sol tarafındaki id ve wayptnum değişkenleri, fonksiyonun girişleridir. id değişkeni, kontrol edilecek kayıttır. wayptnum değişkeni, kontrol edilecek waypoint numarasıdır.Waypoint bulunur: id.Waypoints anahtarının wayptnum. elemanına erişilir.Durum kontrol edilir: Waypoint, NaN değilse, geçerli kabul edilir.Değer döndürülür: Fonksiyon, id değişkenini döndürür.
+            arguments % bir fonksiyonun girdilerini ifade eder. Bir fonksiyonun argümanları, fonksiyonun nasıl çalışacağını belirler.Bir fonksiyonun argümanları, sabit değerler, değişkenler veya ifadeler olabilir. Sabit değerler, değişmeyen değerlerdir. Değişkenler, değerleri değiştirilebilen değerlerdir. İfadeler, başka değerlere dönüştürülebilen değerlerdir.
+                id (1,1) idstick % id değişkeninin (1,1) indeksindeki elemanına erişir.İşleyiş sırası şu şekildedir:Değişken ve indeks alınır: İfadenin sol tarafındaki id değişkeni, erişilecek kayıttır. İfadenin sağ tarafındaki (1,1) indeksi, erişilecek elemandır.Eleman bulunur: id değişkeninin (1,1) indeksindeki elemanına erişilir.
+                wayptnum (1,1) double % ifadesi, wayptnum değişkeninin (1,1) indeksindeki elemanının değerini bir double değişkenine atar.İşleyiş sırası şu şekildedir:Değişken ve indeks alınır: İfadenin sol tarafındaki wayptnum değişkeni, erişilecek kayıttır. İfadenin sağ tarafındaki (1,1) indeksi, erişilecek elemandır.Eleman bulunur: wayptnum değişkeninin (1,1) indeksindeki elemanına erişilir.Değer atanır: wayptnum değişkeninin (1,1) indeksindeki değerini, double değişkene atanır.
             end
-        end
-    end
+            c = id.Course; % id değişkeninin Course anahtarının değerini, c değişkenine atar.İşleyiş sırası şu şekildedir:Değişkenler alınır: İfadenin sol tarafındaki c değişkeni, değer atanacak değişkendir. İfadenin sağ tarafındaki id.Course ifadesi, id değişkeninin Course anahtarının değerini verir.Değer atanır: id.Course ifadesinin değeri, c değişkenine atanır.
+            [id,ok,n] = updateStatus(id,wayptnum); %id değişkeninin Waypoints anahtarının wayptnum. elemanının durumunu günceller.İşleyiş sırası şu şekildedir:Girişler alınır: İfadenin sol tarafındaki id ve wayptnum değişkenleri, fonksiyonun girişleridir. id değişkeni, güncellenecek kayıttır. wayptnum değişkeni, güncellenecek waypoint numarasıdır.Waypoint bulunur: id.Waypoints anahtarının wayptnum. elemanına erişilir.Durum güncellenir: id.Waypoints anahtarının wayptnum. elemanının durumu, ok parametresi ile belirtilir.Yeni değerler döndürülür: Fonksiyon, id değişkenini, ok parametresinin değerini ve n parametresinin değerini döndürür.
+            if ok && (n > 1) % ok değişkeninin değeri true ve n değişkeninin değeri 1'den büyükse, kod bloğunu çalıştırır.İşleyiş sırası şu şekildedir:Değişkenler alınır: İfadenin sol tarafındaki ok ve n değişkenleri, koşulu kontrol etmek için kullanılır.Durum kontrol edilir: ok değişkeninin değeri true ve n değişkeninin değeri 1'den büyükse, koşul doğrudur.Kod bloğu çalıştırılır: Koşul doğruysa, kod bloğu çalıştırılır.
+                ok = checkWaypoint(c,id,n); %c değişkeninin, id kaydındaki n. waypoint'e uyup uymadığını kontrol eder.İşleyiş sırası şu şekildedir:Girişler alınır: İfadenin sol tarafındaki ok değişkeni, fonksiyonun çıktısıdır. c değişkeni, kontrol edilecek noktadır. id değişkeni, waypoint'lerin bulunduğu kayıttır. n değişkeni, kontrol edilecek waypoint'in indeksidir.Nokta bulunur: id.Waypoints anahtarının n. elemanına erişilir.Uygulama kontrol edilir: c değişkeni, id.Waypoints anahtarının n. elemanına eşitse, ok değişkenine true değeri atanır. Aksi takdirde, ok değişkenine false değeri atanır.
+            end % bitti
+            id.Timestamps(n) = datetime("now"); %id kaydının n. indeksindeki Timestamps anahtarının değerini, geçerli tarih ve saate ayarlar.İşleyiş sırası şu şekildedir:Değişkenler alınır: İfadenin sol tarafındaki id ve n değişkenleri, fonksiyonun girişleridir. id değişkeni, güncellenecek kayıttır. n değişkeni, güncellenecek timestamp'in indeksidir.Timestamp bulunur: id.Timestamps anahtarının n. elemanına erişilir.Değer atanır: id.Timestamps anahtarının n. elemanına, datetime("now"); ifadesi ile belirlenen geçerli tarih ve saat atanır. signal(id,ok) &id değişkeninin geçerli durumunu döndürürİşleyiş sırası şu şekildedir:Değişken alınır: İfadenin sol tarafındaki id değişkeni, durumunu kontrol edilecek kayıttır.Durum kontrol edilir: id değişkeninin değeri true ise, ifade, 1 değerini döndürür. Aksi takdirde, ifade, 0 değerini döndürür.
+        end  % bitti
 
-end
+    end  % bitti
+    
+    methods (Access = private) %id değişkeninin geçerli durumunu döndürür.İşleyiş sırası şu şekildedir:Değişken alınır: İfadenin sol tarafındaki id değişkeni, durumunu kontrol edilecek kayıttır.Durum kontrol edilir: id değişkeninin değeri true ise, ifade, 1 değerini döndürür. Aksi takdirde, ifade, 0 değerini döndürür.
+        function signal(id,ok) %id değişkeninin geçerli durumunu döndüren bir fonksiyondur.Fonksiyonun işleyişi şu şekildedir:Girişler alınır: Fonksiyonun sol tarafındaki id değişkeni, durumunu kontrol edilecek kayıttır. ok değişkeni, fonksiyonun çıktısıdır.Durum kontrol edilir: id değişkeninin değeri true ise, fonksiyon, 1 değerini döndürür. Aksi takdirde, fonksiyon, 0 değerini döndürür.if ok &ok değişkeninin değeri true ise, kod bloğunu çalıştırır. Aksi takdirde, kod bloğu çalıştırılmaz.İşleyiş sırası şu şekildedir:Değişken alınır: İfadenin sol tarafındaki ok değişkeni, koşulu kontrol etmek için kullanılır.Durum kontrol edilir: ok değişkeninin değeri true ise, koşul doğrudur.Kod bloğu çalıştırılır: Koşul doğruysa, kod bloğu çalıştırılır.
+                if (id.Status == "Ready") || (id.Status == "Done")% "id.Status" değişkeninin değeri "Ready" veya "Done" ise, kod bloğunu çalıştırır.Adım adım açıklayacak olursak:Koşulun kontrol edilmesi:İfade, id.Status değişkeninin değerini kontrol eder.id.Status değişkeninin değeri:"Ready" ise, ilk koşul true olur."Done" ise, ikinci koşul true olur.Bu iki değerden herhangi biri değilse, her iki koşul da false olur.Mantıksal operatör:|| operatörü, mantıksal "veya" operatörüdür.Bu operatör, iki koşuldan en az birinin true olması durumunda true değerini döndürür.Kod bloğunun çalıştırılması:Eğer id.Status değişkeninin değeri "Ready" veya "Done" ise (yani, koşullardan en az biri true ise), kod bloğu çalıştırılır.Aksi takdirde, kod bloğu çalıştırılmaz.
+                    disp("Beep beep") %  "Beep beep" mesajını görüntüler.İşleyiş sırası şu şekildedir:String alınır: İfadenin sol tarafındaki "Beep beep" değişkeni, görüntülenecek mesajdır.Mesaj görüntülenir: disp() fonksiyonu, mesajı görüntüler.
+                else %bir koşullu ifadenin (if) ardından gelir ve koşulun doğru olmadığı durumlarda yürütülen kod bloğunu tanımlar.
+                    disp("Beep") %"Beep" mesajını görüntüler.İşleyiş sırası şu şekildedir:String alınır: İfadenin sol tarafındaki "Beep" değişkeni, görüntülenecek mesajdırMesaj görüntülenir: disp() fonksiyonu, mesajı görüntüler.
+                end % bitti
+            else %bir koşullu ifadenin (if) ardından gelir ve koşulun doğru olmadığı durumlarda yürütülen kod bloğunu tanımlar.
+                disp("Buzz") %"Buzz" mesajını görüntüler.İşleyiş sırası şu şekildedir:String alınır: İfadenin sol tarafındaki "Buzz" değişkeni, görüntülenecek mesajdır.Mesaj görüntülenir: disp() fonksiyonu, mesajı görüntüler.
+            end %bitti
+        end % bitti
+
+        function [id,ok,idx] = updateStatus(id,wayptnum) % bir fonksiyondur. Bu fonksiyon, id ve wayptnum değişkenlerini alır ve id, ok ve idx değişkenlerini döndürür.İşlev şu şekilde çalışır:id değişkeni, güncellenecek nesnenin kimliğini içerir.wayptnum değişkeni, güncellenecek yol noktası numarasını içerir.id değişkeni, güncellenen nesnenin kimliğini içerir.ok değişkeni, güncelleme işleminin başarılı olup olmadığını gösterir.idx değişkeni, güncellenen yol noktası numarasını içerir.
+           
+            wplist = id.Course.Waypoints; % id değişkeninin Course özelliğinin Waypoints özelliğini bir wplist değişkenine atar.Açıklama:wplist değişkeni, bir dizi yol noktası içerir.id değişkeni, bir nesnenin kimliğini içerir.Course özelliği, nesnenin kursunu içerir.Waypoints özelliği, kursun yol noktalarını içerir.
+            idx = find(wayptnum == wplist,1,"first"); % wplist dizisinde wayptnum değerine eşit olan ilk öğenin indeksini idx değişkenine atar.Açıklama:idx değişkeni, bir tamsayı içerir.wayptnum değişkeni, bir tamsayı içerir.wplist değişkeni, bir dizi tamsayı içerir.
+           
+            if (id.Status == "Error") || (id.Status == "Done") %id değişkeninin Status özelliğinin değerinin "Error" veya "Done" olup olmadığını kontrol eder.Açıklama:id değişkeni, bir nesnenin kimliğini içerir.Status özelliği, nesnenin durumunu içerir.
+                
+                ok = false; % ok değişkeninin değerini false olarak ayarlar.Açıklama:ok değişkeni, bir boolean değişkenidir.
+            elseif (id.Status == "Ready") %id değişkeninin Status özelliğinin değerinin "Ready" olup olmadığını kontrol eder.id değişkeni, bir nesnenin kimliğini içerir.Status özelliği, nesnenin durumunu içerir
+               
+                if (idx == 1) %idx değişkeninin değerinin 1 olup olmadığını kontrol eder.idx değişkeninin değerinin 1 olup olmadığını kontrol eder.
+                   
+                    id.Status = "Running"; % id değişkeninin Status özelliğinin değerini "Running" olarak ayarlar.id değişkeni, bir nesnenin kimliğini içerir.Status özelliği, nesnenin durumunu içerir
+                    ok = true; % ok değişkeninin değerini true olarak ayarlar.ok değişkeni, bir boolean değişkenidir.
+                else % eğer
+                   
+                    ok = false; %ok değişkeninin değerini false olarak ayarlar.ok değişkeni, bir boolean değişkenidir.
+                end % bitti
+            else % eğer
+                
+                ok = ~isempty(idx); %idx değişkeninin boş olup olmadığını kontrol eder.ok değişkeni, bir boolean değişkenidir.idx değişkeni, herhangi bir veri türü olabilir.
+               
+                if (idx == numel(wplist)) %idx değişkeninin wplist vektörünün boyutuna eşit olup olmadığını kontrol ederidx değişkeni, bir tamsayıdır.wplist vektörü, herhangi bir veri türü içerebilir.
+                    id.Status = "Done"; %id değişkeninin Status özelliğinin değerini "Done" olarak ayarlar.id değişkeni, bir nesnenin kimliğini içerir.Status özelliği, nesnenin durumunu içerir.
+                end % bitti
+            end  % bitti
+        end % bitti
+    end  % bitti
+
+end  % bitti
